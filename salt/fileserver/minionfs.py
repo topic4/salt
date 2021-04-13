@@ -21,8 +21,8 @@ allowed to push files to the Master), and ``minionfs`` must be added to the
     ``minion`` would work.
 
 Other minionfs settings include: :conf_master:`minionfs_whitelist`,
-:conf_master:`minionfs_blacklist`, :conf_master:`minionfs_mountpoint`, and
-:conf_master:`minionfs_env`.
+:conf_master:`minionfs_blacklist`, :conf_master:`minionfs_restrict`, 
+:conf_master:`minionfs_mountpoint`, and :conf_master:`minionfs_env`.
 
 .. seealso:: :ref:`tutorial-minionfs`
 
@@ -62,15 +62,40 @@ def __virtual__():
     return __virtualname__ if __opts__['file_recv'] else False
 
 
+def _is_allowed(minion):
+    '''
+    Check if the minion is allowed, based on its id
+    '''
+    if __opts__['minionfs_restrict']:
+        try:
+            requesting_minion = __opts__['grains']['id']
+        except KeyError:
+            # minion id not known, fallback to not allowed
+            allowed = False
+            requesting_minion = 'unknown'
+        else:
+            # a minion may only access its _own_ minionfs files
+            allowed = requesting_minion == minion
+        log.debug("minionfs: %s -> %s %s", requesting_minion,
+                  minion, "allowed" if allowed else "not allowed")
+    else:
+        # minionfs_restrict is False, all minions are allowed
+        allowed = True
+
+    return allowed
+
+
 def _is_exposed(minion):
     '''
     Check if the minion is exposed, based on the whitelist and blacklist
     '''
-    return salt.utils.stringutils.check_whitelist_blacklist(
+    exposed = salt.utils.stringutils.check_whitelist_blacklist(
         minion,
         whitelist=__opts__['minionfs_whitelist'],
         blacklist=__opts__['minionfs_blacklist']
     )
+
+    return exposed and _is_allowed(minion)
 
 
 def find_file(path, tgt_env='base', **kwargs):  # pylint: disable=W0613

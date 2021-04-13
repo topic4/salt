@@ -121,8 +121,14 @@ can be managed using the :conf_master:`minionfs_whitelist` and
 :conf_master:`minionfs_blacklist` config options. Click the links for both of
 them for a detailed explanation of how to use them.
 
-A more complex configuration example, which uses both a whitelist and
-blacklist, can be found below:
+The access to files can be also managed by :conf_master:`minionfs_restrict`
+config option. If set to true, minion can access only files that originated
+from that minion. This is applied after whitelist and blacklist settings,
+meaning that if the blacklist excludes a minion, the minion will not have access
+to any of the files, including ones he owned.
+
+A more complex configuration example, which uses a whitelist, blacklist, and
+restrict can be found below:
 
 .. code-block:: yaml
 
@@ -142,14 +148,18 @@ blacklist, can be found below:
     minionfs_blacklist:
       - web21
 
+    minionfs_restrict: True
+
 Potential Concerns
 ------------------
 
-* There is no access control in place to restrict which minions have access to
-  files served up by :mod:`minionfs <salt.fileserver.minionfs>`. All minions
-  will have access to these files.
+* There is no advanced access control in place to restrict which minions have
+  access to files served up by :mod:`minionfs <salt.fileserver.minionfs>`. All
+  minions will have access to these files unless the 
+  :conf_master:`minionfs_restrict` option is used. This will however block any
+  file sharing (if one is desired).
 
-* Unless the :conf_master:`minionfs_whitelist` and/or
-  :conf_master:`minionfs_blacklist` config options are used, all minions which
-  push files to the master will have their files made available via
+* Unless the :conf_master:`minionfs_whitelist`, :conf_master:`minionfs_blacklist`
+  and/or :conf_master:`minionfs_restrict` config options are used, all minions
+  which push files to the master will have their files made available via
   :mod:`minionfs <salt.fileserver.minionfs>`.
